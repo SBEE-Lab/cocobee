@@ -8,4 +8,10 @@ result-*
 
 # cache
 __pycache__
-cocoindex.db
+.pytest_cache/
+
+# runtime state: engine db, vector store
+var/
+
+# secrets
+.env

@@ -1,0 +1,38 @@
+{
+  "ok": true,
+  "files": [
+    {
+      "id": "F0TEXT",
+      "mode": "hosted",
+      "name": "runbook.md",
+      "title": "runbook",
+      "mimetype": "text/markdown",
+      "size": 2048,
+      "created": 1758470500,
+      "user": "U0LEAD",
+      "url_private_download": "https://files.slack.com/files-pri/T0-F0TEXT/download/runbook.md",
+      "permalink": "https://example.slack.com/files/U0LEAD/F0TEXT/runbook.md"
+    },
+    {
+      "id": "F0EXTERNAL",
+      "mode": "external",
+      "name": "design.fig",
+      "mimetype": "application/octet-stream",
+      "size": 100,
+      "created": 1758470600,
+      "user": "U0DEV",
+      "permalink": "https://example.slack.com/files/U0DEV/F0EXTERNAL/design.fig"
+    },
+    {
+      "id": "F0NOURL",
+      "mode": "hosted",
+      "name": "gone.txt",
+      "mimetype": "text/plain",
+      "size": 10,
+      "created": 1758470700,
+      "user": "U0DEV",
+      "permalink": "https://example.slack.com/files/U0DEV/F0NOURL/gone.txt"
+    }
+  ],
+  "response_metadata": { "next_cursor": "" }
+}

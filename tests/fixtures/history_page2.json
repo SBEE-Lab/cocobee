@@ -1,0 +1,13 @@
+{
+  "ok": true,
+  "messages": [
+    {
+      "type": "message",
+      "user": "U0OPS",
+      "ts": "1758460000.000100",
+      "text": "postmortem doc is up"
+    }
+  ],
+  "has_more": false,
+  "response_metadata": { "next_cursor": "" }
+}

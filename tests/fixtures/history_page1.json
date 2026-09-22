@@ -1,0 +1,30 @@
+{
+  "ok": true,
+  "messages": [
+    {
+      "type": "message",
+      "user": "U0LEAD",
+      "ts": "1758470400.000100",
+      "text": "deploy rollback runbook?",
+      "thread_ts": "1758470400.000100",
+      "reply_count": 3,
+      "latest_reply": "1758470999.000500"
+    },
+    {
+      "type": "message",
+      "subtype": "channel_join",
+      "user": "U0NEW",
+      "ts": "1758470300.000100",
+      "text": "has joined the channel"
+    },
+    {
+      "type": "message",
+      "user": "U0DEV",
+      "ts": "1758470200.000100",
+      "text": "staging is green",
+      "edited": { "user": "U0DEV", "ts": "1758470260.000000" }
+    }
+  ],
+  "has_more": true,
+  "response_metadata": { "next_cursor": "cursor-page-2" }
+}
