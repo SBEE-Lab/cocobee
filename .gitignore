@@ -1,4 +1,11 @@
+# environment
 .direnv/
 .venv/
+
+# build artifacts
 result
 result-*
+
+# cache
+__pycache__
+cocoindex.db

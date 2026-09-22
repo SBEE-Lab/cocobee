@@ -3,10 +3,15 @@ name = "cocoindex-playground"
 version = "0.1.0"
 description = "CocoIndex playground"
 requires-python = ">=3.14"
-dependencies = ["cocoindex>=1.0.24", "numpy>=2.5.3", "slack-sdk>=3.44.1"]
+dependencies = [
+  "aiohttp>=3.14.3",
+  "cocoindex[lancedb,sentence-transformers]>=1.0.24",
+  "numpy>=2.5.3",
+  "slack-sdk>=3.44.1",
+]
 
 [dependency-groups]
-dev = ["mypy>=1.14", "ipykernel>=7.3.0"]
+dev = ["mypy>=1.14", "ipykernel>=7.3.0", "pytest>=9.1.1"]
 
 [tool.uv]
 package = false
