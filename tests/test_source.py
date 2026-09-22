@@ -9,7 +9,7 @@ from typing import Any, TypeVar
 from cocoindex.resources.rate_limit import RateLimiter
 
 from slack_index.models import FileRef, ThreadRef
-from slack_index.source import SlackChannelFiles, SlackChannelThreads
+from slack_index.source import SlackChannelFiles, SlackChannelThreads, oldest_ts
 from tests.conftest import FakeSlackClient
 
 CHANNEL = "C0TEST"
@@ -102,3 +102,8 @@ def test_file_scan_keeps_only_fetchable_files(files_client: FakeSlackClient) -> 
             ),
         )
     ]
+
+
+def test_no_lookback_means_no_cutoff() -> None:
+    assert oldest_ts(None) is None
+    assert oldest_ts(datetime.timedelta(days=1)) is not None

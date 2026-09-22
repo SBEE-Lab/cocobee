@@ -27,7 +27,8 @@ SLACK_REQUESTS_PER_SECOND = 50 / 60
 class Settings:
     channel_ids: tuple[str, ...]
     embed_model: str
-    lookback: datetime.timedelta
+    # None indexes the channel from its first message.
+    lookback: datetime.timedelta | None
     poll_interval: datetime.timedelta
     max_file_bytes: int
 
@@ -45,9 +46,7 @@ class Settings:
             embed_model=os.environ.get(
                 "SLACK_INDEX_EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2"
             ),
-            lookback=datetime.timedelta(
-                days=float(os.environ.get("SLACK_INDEX_LOOKBACK_DAYS", "90"))
-            ),
+            lookback=_lookback_from_env(),
             poll_interval=datetime.timedelta(
                 seconds=float(os.environ.get("SLACK_INDEX_POLL_SECONDS", "60"))
             ),
@@ -55,6 +54,12 @@ class Settings:
                 os.environ.get("SLACK_INDEX_MAX_FILE_BYTES", str(5 * 1024 * 1024))
             ),
         )
+
+
+def _lookback_from_env() -> datetime.timedelta | None:
+    """Unset or 0 means the whole channel history."""
+    days = float(os.environ.get("SLACK_INDEX_LOOKBACK_DAYS", "0"))
+    return datetime.timedelta(days=days) if days > 0 else None
 
 
 def bot_token() -> str:

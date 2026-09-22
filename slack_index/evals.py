@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import pathlib
+import statistics
 from collections import defaultdict
 from dataclasses import dataclass, field
 
@@ -28,6 +29,12 @@ class Question:
     question: str
     expected: frozenset[str]
     tags: tuple[str, ...]
+
+    @property
+    def answerable(self) -> bool:
+        """An empty `expected` means the channel has no answer: the question is
+        there to show what the index does when nothing is relevant."""
+        return bool(self.expected)
 
 
 @dataclass
@@ -50,7 +57,7 @@ def load_questions(path: pathlib.Path) -> list[Question]:
     return [
         Question(
             question=item["question"],
-            expected=frozenset(item["expected"]),
+            expected=frozenset(item.get("expected") or ()),
             tags=tuple(item.get("tags", ())),
         )
         for item in raw
@@ -70,19 +77,35 @@ def _record(
             report.hits[k] = report.hits.get(k, 0) + 1
 
 
+@dataclass
+class Scores:
+    """Top-1 similarity, split by whether an answer exists at all. If the two
+    overlap, no score cutoff can stop the index from answering confidently about
+    something the channel never discussed."""
+
+    answerable: list[float] = field(default_factory=list)
+    unanswerable: list[float] = field(default_factory=list)
+
+
 async def evaluate(
     searcher: Searcher,
     questions: list[Question],
     *,
     ks: tuple[int, ...] = DEFAULT_KS,
     top_k: int | None = None,
-) -> tuple[Report, dict[str, Report]]:
+) -> tuple[Report, dict[str, Report], Scores]:
     limit = top_k or max(ks)
     overall = Report()
     per_tag: dict[str, Report] = defaultdict(Report)
+    scores = Scores()
 
     for question in questions:
         hits = await searcher.search(question.question, limit)
+        top_score = hits[0].score if hits else 0.0
+        if not question.answerable:
+            scores.unanswerable.append(top_score)
+            continue
+        scores.answerable.append(top_score)
         rank = next(
             (
                 i
@@ -94,7 +117,7 @@ async def evaluate(
         _record(overall, ks, rank, question.question)
         for tag in question.tags:
             _record(per_tag[tag], ks, rank, question.question)
-    return overall, dict(per_tag)
+    return overall, dict(per_tag), scores
 
 
 def _format(name: str, report: Report, ks: tuple[int, ...]) -> str:
@@ -108,11 +131,22 @@ def _format(name: str, report: Report, ks: tuple[int, ...]) -> str:
 async def run(questions_path: pathlib.Path, top_k: int) -> None:
     questions = load_questions(questions_path)
     searcher = await Searcher.open()
-    overall, per_tag = await evaluate(searcher, questions, top_k=top_k)
+    overall, per_tag, scores = await evaluate(searcher, questions, top_k=top_k)
 
     print(_format("overall", overall, DEFAULT_KS))
     for tag in sorted(per_tag):
         print(_format(tag, per_tag[tag], DEFAULT_KS))
+
+    if scores.unanswerable:
+        answerable = sorted(scores.answerable)
+        p25 = answerable[len(answerable) // 4]
+        print(
+            f"\ntop-1 score  answerable: min {min(answerable):.3f},"
+            f" p25 {p25:.3f}, median {statistics.median(answerable):.3f}"
+            f"  |  unanswerable ({len(scores.unanswerable)}):"
+            f" median {statistics.median(scores.unanswerable):.3f},"
+            f" max {max(scores.unanswerable):.3f}"
+        )
     if overall.misses:
         print(f"\nmissed ({len(overall.misses)}):")
         for question in overall.misses:

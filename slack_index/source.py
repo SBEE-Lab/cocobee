@@ -43,7 +43,10 @@ async def _poll(
             await subscriber.update_all()
 
 
-def _oldest_ts(lookback: datetime.timedelta) -> str:
+def oldest_ts(lookback: datetime.timedelta | None) -> str | None:
+    """Slack treats a missing `oldest` as "from the beginning"."""
+    if lookback is None:
+        return None
     return str((datetime.datetime.now(tz=datetime.UTC) - lookback).timestamp())
 
 
@@ -62,7 +65,7 @@ class SlackChannelThreads:
         limiter: RateLimiter,
         channel: str,
         *,
-        lookback: datetime.timedelta,
+        lookback: datetime.timedelta | None,
         poll_interval: datetime.timedelta,
     ) -> None:
         self._client = client
@@ -74,7 +77,7 @@ class SlackChannelThreads:
 
     async def _scan(self) -> AsyncIterator[tuple[str, ThreadRef]]:
         cursor: str | None = None
-        oldest = _oldest_ts(self._lookback)
+        oldest = oldest_ts(self._lookback)
         while True:
             await self._limiter.acquire()
             response = await self._client.conversations_history(
@@ -123,7 +126,7 @@ class SlackChannelFiles:
         limiter: RateLimiter,
         channel: str,
         *,
-        lookback: datetime.timedelta,
+        lookback: datetime.timedelta | None,
         poll_interval: datetime.timedelta,
     ) -> None:
         self._client = client
@@ -135,7 +138,7 @@ class SlackChannelFiles:
 
     async def _scan(self) -> AsyncIterator[tuple[str, FileRef]]:
         cursor: str | None = None
-        ts_from = _oldest_ts(self._lookback)
+        ts_from = oldest_ts(self._lookback)
         while True:
             await self._limiter.acquire()
             response = await self._client.files_list(
