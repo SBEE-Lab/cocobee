@@ -74,6 +74,7 @@ async def process_file(
             kind="file",
             channel=ref.channel,
             source_id=ref.file_id,
+            covered=ref.file_id,
             permalink=ref.permalink,
             author=await display_name(ref.user),
             posted_at=datetime.datetime.fromtimestamp(ref.created, tz=datetime.UTC),

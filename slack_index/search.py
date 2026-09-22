@@ -18,6 +18,7 @@ _CANDIDATE_FACTOR = 5
 @dataclass(frozen=True, slots=True)
 class Hit:
     source_id: str
+    covered: frozenset[str]
     kind: str
     author: str
     permalink: str
@@ -58,6 +59,7 @@ class Searcher:
             hits.append(
                 Hit(
                     source_id=source_id,
+                    covered=frozenset(row["covered"].split()),
                     kind=row["kind"],
                     author=row["author"],
                     permalink=row["permalink"],

@@ -25,6 +25,9 @@ class ChunkMeta:
     kind: str
     channel: str
     source_id: str
+    # Every source-side id this document answers for — a window covers several
+    # message timestamps, so a lookup by any one of them must find it.
+    covered: str
     permalink: str
     author: str
     posted_at: datetime.datetime
@@ -43,6 +46,7 @@ async def _declare_chunk(
             kind=meta.kind,
             channel=meta.channel,
             source_id=meta.source_id,
+            covered=meta.covered,
             permalink=meta.permalink,
             author=meta.author,
             posted_at=meta.posted_at,

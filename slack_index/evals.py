@@ -110,7 +110,7 @@ async def evaluate(
             (
                 i
                 for i, hit in enumerate(hits, start=1)
-                if hit.source_id in question.expected
+                if question.expected & ({hit.source_id} | hit.covered)
             ),
             None,
         )

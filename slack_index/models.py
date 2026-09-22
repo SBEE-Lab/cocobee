@@ -12,19 +12,36 @@ from slack_index.context import EMBEDDER
 
 
 @dataclass(frozen=True, slots=True)
-class ThreadRef:
-    """A thread as seen by the channel scan.
+class Message:
+    """A top-level message as the channel scan saw it."""
 
-    Every field takes part in change detection: when the scan reports a different
-    value the thread's component re-runs, and nothing else does.
+    ts: str
+    user: str | None
+    text: str
+
+
+@dataclass(frozen=True, slots=True)
+class ConversationRef:
+    """One indexable conversation: a thread, or a run of consecutive messages.
+
+    Every field takes part in change detection, so a new reply, an edit or a
+    neighbour joining the run re-runs this conversation and nothing else.
     """
 
     channel: str
-    thread_ts: str
+    start_ts: str
     revision: str
     reply_count: int
-    user: str | None
-    text: str
+    messages: tuple[Message, ...]
+
+    @property
+    def is_thread(self) -> bool:
+        """Threads carry their replies in Slack, not in the scan."""
+        return self.reply_count > 0
+
+    @property
+    def covered_ts(self) -> tuple[str, ...]:
+        return tuple(message.ts for message in self.messages)
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,12 +61,13 @@ class FileRef:
 
 @dataclass
 class SlackChunk:
-    """One embedded chunk — of a thread transcript or of a shared file."""
+    """One embedded chunk — of a conversation or of a shared file."""
 
     id: int
     kind: str
     channel: str
     source_id: str
+    covered: str
     permalink: str
     author: str
     posted_at: datetime.datetime

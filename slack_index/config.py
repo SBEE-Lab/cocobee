@@ -16,6 +16,12 @@ DB_PATH = VAR_DIR / "cocoindex.db"
 LANCEDB_URI = VAR_DIR / "lancedb"
 
 TABLE_NAME = "slack_chunks"
+
+# Consecutive messages inside this gap belong to the same conversation. Caps stop a
+# busy afternoon from collapsing into one undifferentiated document.
+WINDOW_GAP = datetime.timedelta(minutes=15)
+WINDOW_MAX_MESSAGES = 20
+WINDOW_MAX_CHARS = 2000
 CHUNK_SIZE = 1200
 CHUNK_OVERLAP = 200
 

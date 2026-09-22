@@ -1,4 +1,4 @@
-"""One component per thread: fetch replies, render, chunk, embed."""
+"""One component per conversation: gather its messages, render, chunk, embed."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from cocoindex.connectors import lancedb
 
 from slack_index.chunking import ChunkMeta, declare_chunks
 from slack_index.context import SLACK, SLACK_LIMIT
-from slack_index.models import SlackChunk, ThreadRef
+from slack_index.models import ConversationRef, Message, SlackChunk
 from slack_index.source import next_cursor
 from slack_index.users import display_name
 
@@ -27,59 +27,56 @@ def speaker_id(message: dict[str, Any]) -> str | None:
     return message.get("user") or message.get("bot_id")
 
 
-def needs_replies(ref: ThreadRef) -> bool:
-    """A reply-less message is already complete in the scan, so fetching it again
-    would spend one of the 50 Slack calls per minute on nothing."""
-    return ref.reply_count > 0
-
-
-async def thread_messages(ref: ThreadRef) -> list[dict[str, Any]]:
-    if not needs_replies(ref):
-        return [{"user": ref.user, "text": ref.text, "ts": ref.thread_ts}]
-    return await fetch_replies(ref)
-
-
-async def fetch_replies(ref: ThreadRef) -> list[dict[str, Any]]:
+async def fetch_replies(ref: ConversationRef) -> list[Message]:
     client = coco.use_context(SLACK)
     limiter = coco.use_context(SLACK_LIMIT)
-    messages: list[dict[str, Any]] = []
+    messages: list[Message] = []
     cursor: str | None = None
     while True:
         await limiter.acquire()
         response = await client.conversations_replies(
-            channel=ref.channel, ts=ref.thread_ts, limit=200, cursor=cursor
+            channel=ref.channel, ts=ref.start_ts, limit=200, cursor=cursor
         )
-        messages.extend(response["messages"])
+        messages.extend(
+            Message(ts=m["ts"], user=speaker_id(m), text=m.get("text", ""))
+            for m in response["messages"]
+        )
         cursor = next_cursor(response)
         if cursor is None:
             return messages
 
 
+async def conversation_messages(ref: ConversationRef) -> list[Message]:
+    """A grouped run already arrived complete in the scan; only a thread needs a call."""
+    if not ref.is_thread:
+        return list(ref.messages)
+    return await fetch_replies(ref)
+
+
 @coco.fn(memo=True)
 async def process_thread(
-    ref: ThreadRef,
+    ref: ConversationRef,
     table: lancedb.TableTarget[SlackChunk],
 ) -> None:
-    messages = await thread_messages(ref)
+    messages = await conversation_messages(ref)
     if not messages:
         return
 
-    # The whole thread is embedded as one document: a reply only means something
-    # next to the message it answers, and a chunk lifted out of it loses that.
     lines: list[str] = []
     for message in messages:
-        speaker = await display_name(speaker_id(message))
-        lines.append(f"**{speaker}**: {message.get('text', '')}")
+        speaker = await display_name(message.user)
+        lines.append(f"**{speaker}**: {message.text}")
 
     await declare_chunks(
         "\n\n".join(lines),
         ChunkMeta(
             kind="message",
             channel=ref.channel,
-            source_id=ref.thread_ts,
-            permalink=thread_permalink(ref.channel, ref.thread_ts),
-            author=await display_name(speaker_id(messages[0])),
-            posted_at=ts_to_datetime(ref.thread_ts),
+            source_id=ref.start_ts,
+            covered=" ".join(m.ts for m in messages),
+            permalink=thread_permalink(ref.channel, ref.start_ts),
+            author=await display_name(messages[0].user),
+            posted_at=ts_to_datetime(ref.start_ts),
         ),
         table,
     )

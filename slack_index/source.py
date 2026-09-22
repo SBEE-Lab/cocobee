@@ -16,7 +16,8 @@ from cocoindex.connectorkits import SingleWatcherGuard
 from cocoindex.resources.rate_limit import RateLimiter
 from slack_sdk.web.async_client import AsyncWebClient
 
-from slack_index.models import FileRef, ThreadRef
+from slack_index.config import WINDOW_GAP, WINDOW_MAX_CHARS, WINDOW_MAX_MESSAGES
+from slack_index.models import ConversationRef, FileRef, Message
 
 # Joins, leaves and topic changes carry no content worth searching.
 SKIP_SUBTYPES = frozenset(
@@ -56,8 +57,67 @@ def next_cursor(response: Any) -> str | None:
     return metadata.get("next_cursor") or None
 
 
+def group_messages(
+    channel: str, messages: list[Message], meta: dict[str, tuple[str, int]]
+) -> list[ConversationRef]:
+    """Cut a channel's messages into indexable conversations.
+
+    A message with replies is its own conversation, as Slack already grouped it.
+    Everything else is grouped with its neighbours: a message that is only a date,
+    or only "ok", is an answer rather than a document — on its own it is
+    unretrievable, and it means nothing without the message above it.
+
+    `meta` maps a ts to its (revision, reply_count) from the scan.
+    """
+    conversations: list[ConversationRef] = []
+    run: list[Message] = []
+    run_chars = 0
+
+    def flush() -> None:
+        nonlocal run, run_chars
+        if not run:
+            return
+        conversations.append(
+            ConversationRef(
+                channel=channel,
+                start_ts=run[0].ts,
+                revision=max(meta[m.ts][0] for m in run),
+                reply_count=0,
+                messages=tuple(run),
+            )
+        )
+        run = []
+        run_chars = 0
+
+    for message in sorted(messages, key=lambda m: float(m.ts)):
+        revision, reply_count = meta[message.ts]
+        if reply_count > 0:
+            flush()
+            conversations.append(
+                ConversationRef(
+                    channel=channel,
+                    start_ts=message.ts,
+                    revision=revision,
+                    reply_count=reply_count,
+                    messages=(message,),
+                )
+            )
+            continue
+        gap = float(message.ts) - float(run[-1].ts) if run else 0.0
+        if run and (
+            gap > WINDOW_GAP.total_seconds()
+            or len(run) >= WINDOW_MAX_MESSAGES
+            or run_chars + len(message.text) > WINDOW_MAX_CHARS
+        ):
+            flush()
+        run.append(message)
+        run_chars += len(message.text)
+    flush()
+    return conversations
+
+
 class SlackChannelThreads:
-    """LiveMapView over a channel's threads: key = ``thread_ts``, value = `ThreadRef`."""
+    """LiveMapView over a channel's conversations: key = first ts, value = `ConversationRef`."""
 
     def __init__(
         self,
@@ -75,7 +135,9 @@ class SlackChannelThreads:
         self._poll_interval = poll_interval
         self._guard = SingleWatcherGuard(f"SlackChannelThreads({channel})")
 
-    async def _scan(self) -> AsyncIterator[tuple[str, ThreadRef]]:
+    async def _scan(self) -> AsyncIterator[tuple[str, ConversationRef]]:
+        messages: list[Message] = []
+        meta: dict[str, tuple[str, int]] = {}
         cursor: str | None = None
         oldest = oldest_ts(self._lookback)
         while True:
@@ -88,29 +150,28 @@ class SlackChannelThreads:
                     continue
                 ts = message["ts"]
                 # A reply bumps latest_reply, an edit bumps edited.ts — take the
-                # larger so either one re-runs the thread.
+                # larger so either one re-runs the conversation.
                 revision = max(
                     ts,
                     message.get("latest_reply", ts),
                     message.get("edited", {}).get("ts", ts),
                 )
-                yield (
-                    ts,
-                    ThreadRef(
-                        channel=self._channel,
-                        thread_ts=ts,
-                        revision=revision,
-                        reply_count=int(message.get("reply_count", 0)),
+                meta[ts] = (revision, int(message.get("reply_count", 0)))
+                messages.append(
+                    Message(
+                        ts=ts,
                         user=message.get("user") or message.get("bot_id"),
-                        # Carried so a message without replies needs no further call.
                         text=message.get("text", ""),
-                    ),
+                    )
                 )
             cursor = next_cursor(response)
             if cursor is None:
-                return
+                break
 
-    def __aiter__(self) -> AsyncIterator[tuple[str, ThreadRef]]:
+        for conversation in group_messages(self._channel, messages, meta):
+            yield conversation.start_ts, conversation
+
+    def __aiter__(self) -> AsyncIterator[tuple[str, ConversationRef]]:
         return self._scan()
 
     async def watch(self, subscriber: _Subscriber) -> None:

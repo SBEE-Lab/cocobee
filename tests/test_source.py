@@ -1,4 +1,4 @@
-"""The channel scans decide what gets indexed and what gets dropped."""
+"""The channel scan decides what gets indexed, dropped, and grouped together."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from typing import Any, TypeVar
 
 from cocoindex.resources.rate_limit import RateLimiter
 
-from slack_index.models import FileRef, ThreadRef
+from slack_index.models import FileRef
 from slack_index.source import SlackChannelFiles, SlackChannelThreads, oldest_ts
 from tests.conftest import FakeSlackClient
 
@@ -48,39 +48,38 @@ def _files(client: FakeSlackClient) -> SlackChannelFiles:
     )
 
 
-def test_thread_scan_paginates_and_skips_noise(history_client: FakeSlackClient) -> None:
+def test_scan_paginates_and_skips_noise(history_client: FakeSlackClient) -> None:
     items = _collect(_threads(history_client))
 
+    # Chronological, one conversation each: the three are minutes-to-hours apart.
     assert [key for key, _ in items] == [
-        "1758470400.000100",
-        "1758470200.000100",
         "1758460000.000100",
+        "1758470200.000100",
+        "1758470400.000100",
     ]
     cursors = [kwargs.get("cursor") for _, kwargs in history_client.calls]
     assert cursors == [None, "cursor-page-2"]
 
 
-def test_thread_revision_tracks_replies_and_edits(
-    history_client: FakeSlackClient,
-) -> None:
+def test_revision_tracks_replies_and_edits(history_client: FakeSlackClient) -> None:
     items = dict(_collect(_threads(history_client)))
 
     replied = items["1758470400.000100"]
-    assert replied == ThreadRef(
-        channel=CHANNEL,
-        thread_ts="1758470400.000100",
-        revision="1758470999.000500",
-        reply_count=3,
-        user="U0LEAD",
-        text="deploy rollback runbook?",
-    )
+    assert replied.is_thread
+    assert replied.reply_count == 3
+    assert replied.revision == "1758470999.000500"
 
     edited = items["1758470200.000100"]
+    assert not edited.is_thread
     assert edited.revision == "1758470260.000000"
-    assert edited.reply_count == 0
 
     untouched = items["1758460000.000100"]
-    assert untouched.revision == untouched.thread_ts
+    assert untouched.revision == untouched.start_ts
+
+
+def test_no_lookback_means_no_cutoff() -> None:
+    assert oldest_ts(None) is None
+    assert oldest_ts(datetime.timedelta(days=1)) is not None
 
 
 def test_file_scan_keeps_only_fetchable_files(files_client: FakeSlackClient) -> None:
@@ -102,8 +101,3 @@ def test_file_scan_keeps_only_fetchable_files(files_client: FakeSlackClient) -> 
             ),
         )
     ]
-
-
-def test_no_lookback_means_no_cutoff() -> None:
-    assert oldest_ts(None) is None
-    assert oldest_ts(datetime.timedelta(days=1)) is not None
