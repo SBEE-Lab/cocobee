@@ -71,6 +71,8 @@ def test_thread_revision_tracks_replies_and_edits(
         thread_ts="1758470400.000100",
         revision="1758470999.000500",
         reply_count=3,
+        user="U0LEAD",
+        text="deploy rollback runbook?",
     )
 
     edited = items["1758470200.000100"]

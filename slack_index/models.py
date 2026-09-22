@@ -23,6 +23,8 @@ class ThreadRef:
     thread_ts: str
     revision: str
     reply_count: int
+    user: str | None
+    text: str
 
 
 @dataclass(frozen=True, slots=True)

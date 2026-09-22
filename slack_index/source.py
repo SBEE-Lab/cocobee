@@ -98,6 +98,9 @@ class SlackChannelThreads:
                         thread_ts=ts,
                         revision=revision,
                         reply_count=int(message.get("reply_count", 0)),
+                        user=message.get("user") or message.get("bot_id"),
+                        # Carried so a message without replies needs no further call.
+                        text=message.get("text", ""),
                     ),
                 )
             cursor = next_cursor(response)

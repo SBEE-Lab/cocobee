@@ -27,6 +27,18 @@ def speaker_id(message: dict[str, Any]) -> str | None:
     return message.get("user") or message.get("bot_id")
 
 
+def needs_replies(ref: ThreadRef) -> bool:
+    """A reply-less message is already complete in the scan, so fetching it again
+    would spend one of the 50 Slack calls per minute on nothing."""
+    return ref.reply_count > 0
+
+
+async def thread_messages(ref: ThreadRef) -> list[dict[str, Any]]:
+    if not needs_replies(ref):
+        return [{"user": ref.user, "text": ref.text, "ts": ref.thread_ts}]
+    return await fetch_replies(ref)
+
+
 async def fetch_replies(ref: ThreadRef) -> list[dict[str, Any]]:
     client = coco.use_context(SLACK)
     limiter = coco.use_context(SLACK_LIMIT)
@@ -48,7 +60,7 @@ async def process_thread(
     ref: ThreadRef,
     table: lancedb.TableTarget[SlackChunk],
 ) -> None:
-    messages = await fetch_replies(ref)
+    messages = await thread_messages(ref)
     if not messages:
         return
 
