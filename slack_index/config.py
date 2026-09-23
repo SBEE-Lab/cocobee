@@ -38,7 +38,7 @@ RERANK_MODEL = "BAAI/bge-reranker-v2-m3"
 RERANK_CANDIDATES = 10
 
 # Bulk extraction over short conversations: the cheapest current model is enough.
-DISTILL_MODEL = os.environ.get("SLACK_INDEX_DISTILL_MODEL", "claude-haiku-4-5")
+DISTILL_MODEL = "claude-haiku-4-5"
 DISTILL_MAX_TOKENS = 1024
 DISTILL_TEMPERATURE = 0.0
 
@@ -57,41 +57,66 @@ class Settings:
 
     @classmethod
     def from_env(cls) -> Settings:
-        channels = os.environ.get("SLACK_CHANNEL_IDS", "")
+        channels = setting("SLACK_CHANNEL_IDS", "") or ""
         channel_ids = tuple(c.strip() for c in channels.split(",") if c.strip())
         if not channel_ids:
             raise RuntimeError(
-                "SLACK_CHANNEL_IDS is empty: set it to a comma-separated list of "
-                "channel ids (e.g. C0123ABCD,C0456EFGH)"
+                "SLACK_CHANNEL_IDS is empty: set it to a comma-separated list of channel "
+                "ids, e.g. C0123ABCD,C0456EFGH"
             )
         return cls(
             channel_ids=channel_ids,
-            embed_model=os.environ.get("SLACK_INDEX_EMBED_MODEL", EMBED_MODEL),
+            embed_model=setting("SLACK_INDEX_EMBED_MODEL", EMBED_MODEL) or EMBED_MODEL,
             lookback=_lookback_from_env(),
             poll_interval=datetime.timedelta(
-                seconds=float(os.environ.get("SLACK_INDEX_POLL_SECONDS", "60"))
+                seconds=float(setting("SLACK_INDEX_POLL_SECONDS", "60") or "60")
             ),
             max_file_bytes=int(
-                os.environ.get("SLACK_INDEX_MAX_FILE_BYTES", str(5 * 1024 * 1024))
+                setting("SLACK_INDEX_MAX_FILE_BYTES", str(5 * 1024 * 1024))
+                or str(5 * 1024 * 1024)
             ),
         )
 
 
+def setting(name: str, default: str | None = None) -> str | None:
+    """Configuration arrives as environment variables — from sops through direnv in
+    a dev shell, from the unit's credentials in production.
+
+    An empty value counts as unset: a stray .env, which the cocoindex CLI auto-loads
+    from the first one it finds upwards, would otherwise blank out a credential that
+    the environment actually carries.
+    """
+    return os.environ.get(name) or default
+
+
 def _lookback_from_env() -> datetime.timedelta | None:
     """Unset or 0 means the whole channel history."""
-    days = float(os.environ.get("SLACK_INDEX_LOOKBACK_DAYS", "0"))
+    days = float(setting("SLACK_INDEX_LOOKBACK_DAYS", "0") or "0")
     return datetime.timedelta(days=days) if days > 0 else None
+
+
+def anthropic_api_key() -> str:
+    """Passed explicitly: the SDK reads only the environment, and the key lives in
+    the secrets file."""
+    key = setting("ANTHROPIC_API_KEY")
+    if not key:
+        raise RuntimeError(
+            "ANTHROPIC_API_KEY is not set; the dev shell loads it from secrets.yaml"
+        )
+    return key
 
 
 def anthropic_headers() -> dict[str, str]:
     """An org-scoped API key must name the workspace on every request; a
     workspace-scoped key needs nothing."""
-    workspace = os.environ.get("ANTHROPIC_WORKSPACE_ID")
+    workspace = setting("ANTHROPIC_WORKSPACE_ID")
     return {"anthropic-workspace-id": workspace} if workspace else {}
 
 
 def bot_token() -> str:
-    token = os.environ.get("SLACK_BOT_TOKEN")
+    token = setting("SLACK_BOT_TOKEN")
     if not token:
-        raise RuntimeError("SLACK_BOT_TOKEN is not set")
+        raise RuntimeError(
+            "SLACK_BOT_TOKEN is not set in secrets.yaml or the environment"
+        )
     return token

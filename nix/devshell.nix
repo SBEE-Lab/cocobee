@@ -13,6 +13,7 @@ let
       git
       lmdb
       ruff
+      sops
       uv
     ];
     env = {

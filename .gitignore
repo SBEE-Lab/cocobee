@@ -13,5 +13,6 @@ __pycache__
 # runtime state: engine db, vector store
 var/
 
-# secrets
+# secrets: the encrypted secrets.yaml is committed, plaintext never is
 .env
+secrets.yaml.dec

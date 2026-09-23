@@ -8,11 +8,12 @@ match directly: slower, so it only ever sees the shortlist the retriever produce
 from __future__ import annotations
 
 import asyncio
-import os
 from typing import TYPE_CHECKING
 
 import torch
 from sentence_transformers import CrossEncoder
+
+from slack_index import config
 
 if TYPE_CHECKING:
     from slack_index.search import Hit
@@ -21,7 +22,7 @@ if TYPE_CHECKING:
 def default_device() -> str:
     """Scoring 20 pairs per query is the slowest step in a search; on this laptop
     the GPU is an order of magnitude faster than the CPU fallback."""
-    override = os.environ.get("SLACK_INDEX_RERANK_DEVICE")
+    override = config.setting("SLACK_INDEX_RERANK_DEVICE")
     if override:
         return override
     if torch.backends.mps.is_available():

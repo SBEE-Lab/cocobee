@@ -34,7 +34,10 @@ async def coco_lifespan(builder: coco.EnvironmentBuilder) -> AsyncIterator[None]
     builder.provide(
         DISTILLER,
         Distiller(
-            AsyncAnthropic(default_headers=config.anthropic_headers()),
+            AsyncAnthropic(
+                api_key=config.anthropic_api_key(),
+                default_headers=config.anthropic_headers(),
+            ),
             config.DISTILL_MODEL,
         ),
     )
