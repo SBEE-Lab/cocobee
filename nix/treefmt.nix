@@ -24,5 +24,9 @@
   settings.formatter.ruff-check.priority = 1;
   settings.formatter.ruff-format.priority = 2;
 
-  settings.global.excludes = [ "**/.direnv/**" ];
+  settings.global.excludes = [
+    "**/.direnv/**"
+    "secrets.yaml"
+    "**/*.enc.yaml"
+  ];
 }

@@ -16,15 +16,12 @@
 #   temporal — scheduling, or what happened when
 #   file     — the answer lives in a shared file, not a message
 #   people   — who said or owns something
-
 - question: "did we settle on bumping that library"
   expected: ["1700000000.000100"]
   tags: [decision]
-
 - question: "what was the env var the deploy script reads"
   expected: ["1700000100.000200"]
   tags: [lexical]
-
 - question: "the design doc shared last week"
   expected: ["F00EXAMPLE1", "1700000200.000300"]
   tags: [file]
