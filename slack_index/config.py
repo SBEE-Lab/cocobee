@@ -25,6 +25,14 @@ WINDOW_MAX_CHARS = 2000
 CHUNK_SIZE = 1200
 CHUNK_OVERLAP = 200
 
+# Korean-specialised retrieval model; an English-only model scored MRR 0.16 here
+# against this one's 0.79.
+EMBED_MODEL = "nlpai-lab/KURE-v1"
+
+# Bulk extraction over short conversations: the cheapest current model is enough.
+DISTILL_MODEL = os.environ.get("SLACK_INDEX_DISTILL_MODEL", "claude-haiku-4-5")
+DISTILL_MAX_TOKENS = 1024
+
 # conversations.* and files.* are Slack tier 3 methods: 50+ requests per minute.
 SLACK_REQUESTS_PER_SECOND = 50 / 60
 
@@ -49,9 +57,7 @@ class Settings:
             )
         return cls(
             channel_ids=channel_ids,
-            embed_model=os.environ.get(
-                "SLACK_INDEX_EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2"
-            ),
+            embed_model=os.environ.get("SLACK_INDEX_EMBED_MODEL", EMBED_MODEL),
             lookback=_lookback_from_env(),
             poll_interval=datetime.timedelta(
                 seconds=float(os.environ.get("SLACK_INDEX_POLL_SECONDS", "60"))
@@ -66,6 +72,13 @@ def _lookback_from_env() -> datetime.timedelta | None:
     """Unset or 0 means the whole channel history."""
     days = float(os.environ.get("SLACK_INDEX_LOOKBACK_DAYS", "0"))
     return datetime.timedelta(days=days) if days > 0 else None
+
+
+def anthropic_headers() -> dict[str, str]:
+    """An org-scoped API key must name the workspace on every request; a
+    workspace-scoped key needs nothing."""
+    workspace = os.environ.get("ANTHROPIC_WORKSPACE_ID")
+    return {"anthropic-workspace-id": workspace} if workspace else {}
 
 
 def bot_token() -> str:

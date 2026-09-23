@@ -10,6 +10,7 @@ from cocoindex.connectors import lancedb
 
 from slack_index.chunking import ChunkMeta, declare_chunks
 from slack_index.context import SLACK, SLACK_LIMIT
+from slack_index.distill import distill
 from slack_index.models import ConversationRef, Message, SlackChunk
 from slack_index.source import next_cursor
 from slack_index.users import display_name
@@ -67,8 +68,11 @@ async def process_thread(
         speaker = await display_name(message.user)
         lines.append(f"**{speaker}**: {message.text}")
 
+    transcript = "\n\n".join(lines)
+    # The header goes in front of the transcript, not instead of it: without a
+    # lexical index, dropping the raw text would drop every exact identifier.
     await declare_chunks(
-        "\n\n".join(lines),
+        f"{await distill(transcript)}\n\n---\n\n{transcript}",
         ChunkMeta(
             kind="message",
             channel=ref.channel,

@@ -9,13 +9,15 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 
 import cocoindex as coco
+from anthropic import AsyncAnthropic
 from cocoindex.connectors import lancedb
 from cocoindex.ops.sentence_transformers import SentenceTransformerEmbedder
 from cocoindex.resources.rate_limit import RateLimiter
 from slack_sdk.web.async_client import AsyncWebClient
 
 from slack_index import config
-from slack_index.context import EMBEDDER, LANCE_DB, SLACK, SLACK_LIMIT
+from slack_index.context import DISTILLER, EMBEDDER, LANCE_DB, SLACK, SLACK_LIMIT
+from slack_index.distill import Distiller
 from slack_index.files import process_file
 from slack_index.models import SlackChunk
 from slack_index.source import SlackChannelFiles, SlackChannelThreads
@@ -29,6 +31,13 @@ async def coco_lifespan(builder: coco.EnvironmentBuilder) -> AsyncIterator[None]
     config.VAR_DIR.mkdir(parents=True, exist_ok=True)
     builder.settings.db_path = config.DB_PATH
     builder.provide(SLACK, AsyncWebClient(token=config.bot_token()))
+    builder.provide(
+        DISTILLER,
+        Distiller(
+            AsyncAnthropic(default_headers=config.anthropic_headers()),
+            config.DISTILL_MODEL,
+        ),
+    )
     builder.provide(SLACK_LIMIT, RateLimiter(config.SLACK_REQUESTS_PER_SECOND))
     builder.provide(EMBEDDER, SentenceTransformerEmbedder(_settings.embed_model))
     builder.provide(LANCE_DB, await lancedb.connect_async(str(config.LANCEDB_URI)))
