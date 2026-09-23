@@ -93,6 +93,7 @@ async def evaluate(
     *,
     ks: tuple[int, ...] = DEFAULT_KS,
     top_k: int | None = None,
+    candidates: int | None = None,
 ) -> tuple[Report, dict[str, Report], Scores]:
     limit = top_k or max(ks)
     overall = Report()
@@ -100,7 +101,7 @@ async def evaluate(
     scores = Scores()
 
     for question in questions:
-        hits = await searcher.search(question.question, limit)
+        hits = await searcher.search(question.question, limit, candidates=candidates)
         top_score = hits[0].score if hits else 0.0
         if not question.answerable:
             scores.unanswerable.append(top_score)
@@ -128,10 +129,18 @@ def _format(name: str, report: Report, ks: tuple[int, ...]) -> str:
     return f"{name:<10} {cells}  MRR: {report.mrr:.2f}"
 
 
-async def run(questions_path: pathlib.Path, top_k: int, *, rerank: bool) -> None:
+async def run(
+    questions_path: pathlib.Path,
+    top_k: int,
+    *,
+    rerank: bool,
+    candidates: int | None = None,
+) -> None:
     questions = load_questions(questions_path)
     searcher = await Searcher.open(rerank=rerank)
-    overall, per_tag, scores = await evaluate(searcher, questions, top_k=top_k)
+    overall, per_tag, scores = await evaluate(
+        searcher, questions, top_k=top_k, candidates=candidates
+    )
 
     print(f"rerank: {'on' if rerank else 'off'}")
     print(_format("overall", overall, DEFAULT_KS))
@@ -163,8 +172,21 @@ def main() -> None:
         action="store_true",
         help="score the retriever alone, to measure what reranking adds",
     )
+    parser.add_argument(
+        "--candidates",
+        type=int,
+        default=None,
+        help="how many sources the reranker sees (default: config.RERANK_CANDIDATES)",
+    )
     args = parser.parse_args()
-    asyncio.run(run(args.questions, args.top_k, rerank=not args.no_rerank))
+    asyncio.run(
+        run(
+            args.questions,
+            args.top_k,
+            rerank=not args.no_rerank,
+            candidates=args.candidates,
+        )
+    )
 
 
 if __name__ == "__main__":

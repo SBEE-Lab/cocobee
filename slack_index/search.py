@@ -54,10 +54,17 @@ class Searcher:
             Reranker(config.RERANK_MODEL) if rerank else None,
         )
 
-    async def search(self, query: str, top_k: int) -> list[Hit]:
+    async def search(
+        self, query: str, top_k: int, *, candidates: int | None = None
+    ) -> list[Hit]:
         """Best chunk per source, ranked — a thread that chunked into ten pieces
-        should occupy one result slot, not ten."""
-        wanted = max(top_k, config.RERANK_CANDIDATES) if self._reranker else top_k
+        should occupy one result slot, not ten.
+
+        *candidates* sizes the shortlist handed to the reranker; it is the knob that
+        trades reranking latency against the recall the reranker has to work with.
+        """
+        pool = candidates if candidates is not None else config.RERANK_CANDIDATES
+        wanted = max(top_k, pool) if self._reranker else top_k
         vector = await self._embedder.embed(query)
         request = await self._table.search(vector, vector_column_name="embedding")
         rows = await request.limit(wanted * _CANDIDATE_FACTOR).to_list()

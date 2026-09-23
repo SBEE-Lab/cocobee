@@ -31,9 +31,11 @@ EMBED_MODEL = "nlpai-lab/KURE-v1"
 
 # Cross-encoder over the shortlist. Korean-capable, same family as the embedder.
 RERANK_MODEL = "BAAI/bge-reranker-v2-m3"
-# How many distinct sources the retriever hands the reranker. Recall above this is
-# unreachable, precision below it is the reranker's to fix.
-RERANK_CANDIDATES = 20
+# How many distinct sources the retriever hands the reranker. Measured: 10 and 20
+# score identically while 10 is 2.4x faster, and 30-50 start costing accuracy —
+# extra candidates are extra distractors. The pool never shrinks below the
+# requested result count.
+RERANK_CANDIDATES = 10
 
 # Bulk extraction over short conversations: the cheapest current model is enough.
 DISTILL_MODEL = os.environ.get("SLACK_INDEX_DISTILL_MODEL", "claude-haiku-4-5")
