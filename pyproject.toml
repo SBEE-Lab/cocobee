@@ -1,7 +1,7 @@
 [project]
-name = "cocoindex-playground"
+name = "cocobee"
 version = "0.1.0"
-description = "CocoIndex playground"
+description = "Slack retrieval index built on CocoIndex"
 requires-python = ">=3.14"
 dependencies = [
   "aiohttp>=3.14.3",

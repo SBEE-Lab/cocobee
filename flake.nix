@@ -1,5 +1,5 @@
 {
-  description = "cocoindex-playground";
+  description = "cocobee";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";

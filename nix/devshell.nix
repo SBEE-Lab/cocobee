@@ -6,7 +6,7 @@
 let
   inherit (pkgs) lib;
 
-  virtualenv = pythonSet.mkVirtualEnv "cocoindex-playground-dev" workspace.deps.all;
+  virtualenv = pythonSet.mkVirtualEnv "cocobee-dev" workspace.deps.all;
 
   base = {
     packages = with pkgs; [
