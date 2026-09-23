@@ -1,0 +1,30 @@
+# Question set for `python -m slack_index.evals`. Copy to questions.yaml and fill
+# it with questions whose answers you already know; that file stays untracked
+# because its labels quote channel content.
+#
+#   - question: what someone would actually type, NOT the wording of the message
+#     expected: [source_id, ...]   # thread_ts or file id; any hit in top-k counts
+#     tags: [category, ...]        # scored per tag, so weak spots stay visible
+#
+# Paraphrase away from the message text: a question copied from the message lets
+# lexical retrieval win for free and stops measuring anything.
+#
+# Categories in use:
+#   concept  — about content, worded differently from the message
+#   lexical  — hinges on an exact identifier (part number, hostname, error string)
+#   decision — the answer is an agreement or conclusion, often a short ack
+#   temporal — scheduling, or what happened when
+#   file     — the answer lives in a shared file, not a message
+#   people   — who said or owns something
+
+- question: "did we settle on bumping that library"
+  expected: ["1700000000.000100"]
+  tags: [decision]
+
+- question: "what was the env var the deploy script reads"
+  expected: ["1700000100.000200"]
+  tags: [lexical]
+
+- question: "the design doc shared last week"
+  expected: ["F00EXAMPLE1", "1700000200.000300"]
+  tags: [file]

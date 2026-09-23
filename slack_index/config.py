@@ -29,6 +29,12 @@ CHUNK_OVERLAP = 200
 # against this one's 0.79.
 EMBED_MODEL = "nlpai-lab/KURE-v1"
 
+# Cross-encoder over the shortlist. Korean-capable, same family as the embedder.
+RERANK_MODEL = "BAAI/bge-reranker-v2-m3"
+# How many distinct sources the retriever hands the reranker. Recall above this is
+# unreachable, precision below it is the reranker's to fix.
+RERANK_CANDIDATES = 20
+
 # Bulk extraction over short conversations: the cheapest current model is enough.
 DISTILL_MODEL = os.environ.get("SLACK_INDEX_DISTILL_MODEL", "claude-haiku-4-5")
 DISTILL_MAX_TOKENS = 1024

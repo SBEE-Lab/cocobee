@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from cocoindex.connectors import lancedb
 from cocoindex.ops.sentence_transformers import SentenceTransformerEmbedder
 from lancedb.table import AsyncTable
 
 from slack_index import config
+from slack_index.rerank import Reranker
 
 # One source can own many chunks; over-fetch so that collapsing them still
 # leaves top_k distinct sources.
@@ -25,29 +26,41 @@ class Hit:
     text: str
     score: float
 
+    def with_score(self, score: float) -> Hit:
+        return replace(self, score=score)
+
 
 class Searcher:
     """Holds the embedder and the open table so a run of queries pays for them once."""
 
     def __init__(
-        self, table: AsyncTable, embedder: SentenceTransformerEmbedder
+        self,
+        table: AsyncTable,
+        embedder: SentenceTransformerEmbedder,
+        reranker: Reranker | None,
     ) -> None:
         self._table = table
         self._embedder = embedder
+        self._reranker = reranker
 
     @classmethod
-    async def open(cls) -> Searcher:
+    async def open(cls, *, rerank: bool = True) -> Searcher:
         settings = config.Settings.from_env()
         conn = await lancedb.connect_async(str(config.LANCEDB_URI))
         table = await conn.open_table(config.TABLE_NAME)
-        return cls(table, SentenceTransformerEmbedder(settings.embed_model))
+        return cls(
+            table,
+            SentenceTransformerEmbedder(settings.embed_model),
+            Reranker(config.RERANK_MODEL) if rerank else None,
+        )
 
     async def search(self, query: str, top_k: int) -> list[Hit]:
         """Best chunk per source, ranked — a thread that chunked into ten pieces
         should occupy one result slot, not ten."""
+        wanted = max(top_k, config.RERANK_CANDIDATES) if self._reranker else top_k
         vector = await self._embedder.embed(query)
         request = await self._table.search(vector, vector_column_name="embedding")
-        rows = await request.limit(top_k * _CANDIDATE_FACTOR).to_list()
+        rows = await request.limit(wanted * _CANDIDATE_FACTOR).to_list()
 
         hits: list[Hit] = []
         seen: set[str] = set()
@@ -67,6 +80,8 @@ class Searcher:
                     score=1.0 - row["_distance"],
                 )
             )
-            if len(hits) == top_k:
+            if len(hits) == wanted:
                 break
-        return hits
+        if self._reranker is None:
+            return hits
+        return await self._reranker.rank(query, hits, top_k)

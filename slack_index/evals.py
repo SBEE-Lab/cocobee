@@ -128,11 +128,12 @@ def _format(name: str, report: Report, ks: tuple[int, ...]) -> str:
     return f"{name:<10} {cells}  MRR: {report.mrr:.2f}"
 
 
-async def run(questions_path: pathlib.Path, top_k: int) -> None:
+async def run(questions_path: pathlib.Path, top_k: int, *, rerank: bool) -> None:
     questions = load_questions(questions_path)
-    searcher = await Searcher.open()
+    searcher = await Searcher.open(rerank=rerank)
     overall, per_tag, scores = await evaluate(searcher, questions, top_k=top_k)
 
+    print(f"rerank: {'on' if rerank else 'off'}")
     print(_format("overall", overall, DEFAULT_KS))
     for tag in sorted(per_tag):
         print(_format(tag, per_tag[tag], DEFAULT_KS))
@@ -157,8 +158,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--questions", type=pathlib.Path, default=DEFAULT_QUESTIONS)
     parser.add_argument("--top-k", type=int, default=max(DEFAULT_KS))
+    parser.add_argument(
+        "--no-rerank",
+        action="store_true",
+        help="score the retriever alone, to measure what reranking adds",
+    )
     args = parser.parse_args()
-    asyncio.run(run(args.questions, args.top_k))
+    asyncio.run(run(args.questions, args.top_k, rerank=not args.no_rerank))
 
 
 if __name__ == "__main__":
