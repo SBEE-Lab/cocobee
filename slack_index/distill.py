@@ -10,11 +10,13 @@ that a summary always drops.
 
 from __future__ import annotations
 
+import json
+
 import cocoindex as coco
 from anthropic import AsyncAnthropic
 from pydantic import BaseModel, Field
 
-from slack_index.config import DISTILL_MAX_TOKENS
+from slack_index.config import DISTILL_MAX_TOKENS, DISTILL_TEMPERATURE
 from slack_index.context import DISTILLER
 
 _SYSTEM = """You summarise chat from a molecular biology lab's Slack channel.
@@ -56,6 +58,9 @@ class Distiller:
             system=_SYSTEM,
             messages=[{"role": "user", "content": _INSTRUCTION + transcript}],
             output_format=Distilled,
+            # `parse()` takes no sampling arguments; temperature rides along in the
+            # body so a re-distill does not reword an unchanged conversation.
+            extra_body={"temperature": DISTILL_TEMPERATURE},
         )
         parsed = response.parsed_output
         if parsed is None:
@@ -83,7 +88,20 @@ def render(distilled: Distilled) -> str:
     return "\n".join(lines)
 
 
-@coco.fn(memo=True)
+# The prompt and the output schema shape every distillation but live outside the
+# function body, where cocoindex's logic fingerprint cannot see them. Declaring them
+# as deps is what makes editing a prompt re-distill the channel instead of silently
+# serving summaries written by the old one.
+_PROMPT_DEPS = (
+    _SYSTEM,
+    _INSTRUCTION,
+    DISTILL_MAX_TOKENS,
+    DISTILL_TEMPERATURE,
+    json.dumps(Distilled.model_json_schema(), sort_keys=True),
+)
+
+
+@coco.fn(memo=True, deps=_PROMPT_DEPS)
 async def distill(transcript: str) -> str:
     """Memoized on the transcript, so an unchanged conversation is never re-billed."""
     return render(await coco.use_context(DISTILLER).run(transcript))

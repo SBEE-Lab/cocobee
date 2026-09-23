@@ -32,6 +32,7 @@ EMBED_MODEL = "nlpai-lab/KURE-v1"
 # Bulk extraction over short conversations: the cheapest current model is enough.
 DISTILL_MODEL = os.environ.get("SLACK_INDEX_DISTILL_MODEL", "claude-haiku-4-5")
 DISTILL_MAX_TOKENS = 1024
+DISTILL_TEMPERATURE = 0.0
 
 # conversations.* and files.* are Slack tier 3 methods: 50+ requests per minute.
 SLACK_REQUESTS_PER_SECOND = 50 / 60
