@@ -1,1 +1,5 @@
+# The labels quote channel content, so only the encrypted copy is committed.
 *
+!.gitignore
+!questions.example.yaml
+!questions.enc.yaml

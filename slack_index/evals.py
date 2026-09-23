@@ -21,6 +21,9 @@ import yaml
 from slack_index.search import Searcher
 
 DEFAULT_QUESTIONS = pathlib.Path("evals/questions.yaml")
+# The labels quote channel content, so the repo carries only this encrypted copy;
+# `sops -d` writes the plaintext the scorer reads.
+ENCRYPTED_QUESTIONS = pathlib.Path("evals/questions.enc.yaml")
 DEFAULT_KS = (1, 3, 10)
 
 
@@ -53,6 +56,13 @@ class Report:
 
 
 def load_questions(path: pathlib.Path) -> list[Question]:
+    """Read the plaintext question set, or decrypt the committed one when a fresh
+    checkout has no plaintext yet."""
+    if not path.exists() and path == DEFAULT_QUESTIONS:
+        raise FileNotFoundError(
+            f"{path} is not there; decrypt the committed copy first:\n"
+            f"  sops -d {ENCRYPTED_QUESTIONS} > {path}"
+        )
     raw = yaml.safe_load(path.read_text()) or []
     return [
         Question(
