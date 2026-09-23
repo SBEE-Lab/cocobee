@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from slack_index.config import WINDOW_MAX_CHARS, WINDOW_MAX_MESSAGES
-from slack_index.models import Message
-from slack_index.source import group_messages
+from cocobee.config import WINDOW_MAX_CHARS, WINDOW_MAX_MESSAGES
+from cocobee.models import Message
+from cocobee.source import group_messages
 
 CHANNEL = "C0TEST"
 BASE = 1758470000.0

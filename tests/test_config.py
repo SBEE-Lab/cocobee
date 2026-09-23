@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from slack_index import config
+from cocobee import config
 
 
 def test_a_set_variable_is_used(monkeypatch: pytest.MonkeyPatch) -> None:

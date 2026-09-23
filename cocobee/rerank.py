@@ -13,10 +13,10 @@ from typing import TYPE_CHECKING
 import torch
 from sentence_transformers import CrossEncoder
 
-from slack_index import config
+from cocobee import config
 
 if TYPE_CHECKING:
-    from slack_index.search import Hit
+    from cocobee.search import Hit
 
 
 def default_device() -> str:

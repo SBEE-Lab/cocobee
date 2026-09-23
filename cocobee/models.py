@@ -8,7 +8,7 @@ from typing import Annotated
 
 from numpy.typing import NDArray
 
-from slack_index.context import EMBEDDER
+from cocobee.context import EMBEDDER
 
 
 @dataclass(frozen=True, slots=True)

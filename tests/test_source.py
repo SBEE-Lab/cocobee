@@ -8,8 +8,8 @@ from typing import Any, TypeVar
 
 from cocoindex.resources.rate_limit import RateLimiter
 
-from slack_index.models import FileRef
-from slack_index.source import SlackChannelFiles, SlackChannelThreads, oldest_ts
+from cocobee.models import FileRef
+from cocobee.source import SlackChannelFiles, SlackChannelThreads, oldest_ts
 from tests.conftest import FakeSlackClient
 
 CHANNEL = "C0TEST"

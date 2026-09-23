@@ -11,9 +11,9 @@ from cocoindex.ops.text import RecursiveSplitter
 from cocoindex.resources.chunk import Chunk
 from cocoindex.resources.id import IdGenerator
 
-from slack_index.config import CHUNK_OVERLAP, CHUNK_SIZE
-from slack_index.context import EMBEDDER
-from slack_index.models import SlackChunk
+from cocobee.config import CHUNK_OVERLAP, CHUNK_SIZE
+from cocobee.context import EMBEDDER
+from cocobee.models import SlackChunk
 
 _splitter = RecursiveSplitter()
 

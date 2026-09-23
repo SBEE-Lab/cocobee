@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import sys
 
-from slack_index.search import Searcher
+from cocobee.search import Searcher
 
 TOP_K = 5
 
@@ -20,7 +20,7 @@ async def run(query: str, *, top_k: int = TOP_K) -> None:
 
 def main() -> None:
     if len(sys.argv) < 2:
-        sys.exit("usage: python -m slack_index.query <query>")
+        sys.exit("usage: python -m cocobee.query <query>")
     asyncio.run(run(" ".join(sys.argv[1:])))
 
 

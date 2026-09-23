@@ -1,7 +1,7 @@
 """Score the index against a hand-labelled question set.
 
-    python -m slack_index.evals
-    python -m slack_index.evals --questions evals/questions.yaml --top-k 10
+    python -m cocobee.evals
+    python -m cocobee.evals --questions evals/questions.yaml --top-k 10
 
 Every retrieval change — a different embedding model, grouping, a reranker — is
 judged by re-running this against the same questions.
@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 
 import yaml
 
-from slack_index.search import Searcher
+from cocobee.search import Searcher
 
 DEFAULT_QUESTIONS = pathlib.Path("evals/questions.yaml")
 # The labels quote channel content, so the repo carries only this encrypted copy;

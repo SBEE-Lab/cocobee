@@ -11,7 +11,7 @@ from cocoindex.resources.rate_limit import RateLimiter
 from slack_sdk.web.async_client import AsyncWebClient
 
 if _typing.TYPE_CHECKING:
-    from slack_index import distill
+    from cocobee import distill
 
 SLACK = coco.ContextKey[AsyncWebClient]("slack")
 # detect_change: a different distillation model must re-distill everything.

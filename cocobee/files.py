@@ -9,11 +9,11 @@ import aiohttp
 import cocoindex as coco
 from cocoindex.connectors import lancedb
 
-from slack_index.chunking import ChunkMeta, declare_chunks
-from slack_index.config import bot_token
-from slack_index.context import SLACK_LIMIT
-from slack_index.models import FileRef, SlackChunk
-from slack_index.users import display_name
+from cocobee.chunking import ChunkMeta, declare_chunks
+from cocobee.config import bot_token
+from cocobee.context import SLACK_LIMIT
+from cocobee.models import FileRef, SlackChunk
+from cocobee.users import display_name
 
 _logger = logging.getLogger(__name__)
 

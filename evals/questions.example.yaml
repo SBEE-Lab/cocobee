@@ -1,4 +1,4 @@
-# Question set for `python -m slack_index.evals`. Copy to questions.yaml and fill
+# Question set for `python -m cocobee.evals`. Copy to questions.yaml and fill
 # it with questions whose answers you already know; that file stays untracked
 # because its labels quote channel content.
 #

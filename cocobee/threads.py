@@ -8,12 +8,12 @@ from typing import Any
 import cocoindex as coco
 from cocoindex.connectors import lancedb
 
-from slack_index.chunking import ChunkMeta, declare_chunks
-from slack_index.context import SLACK, SLACK_LIMIT
-from slack_index.distill import distill
-from slack_index.models import ConversationRef, Message, SlackChunk
-from slack_index.source import next_cursor
-from slack_index.users import display_name
+from cocobee.chunking import ChunkMeta, declare_chunks
+from cocobee.context import SLACK, SLACK_LIMIT
+from cocobee.distill import distill
+from cocobee.models import ConversationRef, Message, SlackChunk
+from cocobee.source import next_cursor
+from cocobee.users import display_name
 
 
 def thread_permalink(channel: str, thread_ts: str) -> str:

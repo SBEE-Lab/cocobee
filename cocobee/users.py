@@ -5,7 +5,7 @@ from __future__ import annotations
 import cocoindex as coco
 from slack_sdk.errors import SlackApiError
 
-from slack_index.context import SLACK, SLACK_LIMIT
+from cocobee.context import SLACK, SLACK_LIMIT
 
 UNKNOWN_AUTHOR = "unknown"
 

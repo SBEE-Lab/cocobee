@@ -16,8 +16,8 @@ import cocoindex as coco
 from anthropic import AsyncAnthropic
 from pydantic import BaseModel, Field
 
-from slack_index.config import DISTILL_MAX_TOKENS, DISTILL_TEMPERATURE
-from slack_index.context import DISTILLER
+from cocobee.config import DISTILL_MAX_TOKENS, DISTILL_TEMPERATURE
+from cocobee.context import DISTILLER
 
 _SYSTEM = """You summarise chat from a molecular biology lab's Slack channel.
 The chat is Korean and informal; the science terms are not. Write in Korean.

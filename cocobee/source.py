@@ -16,8 +16,8 @@ from cocoindex.connectorkits import SingleWatcherGuard
 from cocoindex.resources.rate_limit import RateLimiter
 from slack_sdk.web.async_client import AsyncWebClient
 
-from slack_index.config import WINDOW_GAP, WINDOW_MAX_CHARS, WINDOW_MAX_MESSAGES
-from slack_index.models import ConversationRef, FileRef, Message
+from cocobee.config import WINDOW_GAP, WINDOW_MAX_CHARS, WINDOW_MAX_MESSAGES
+from cocobee.models import ConversationRef, FileRef, Message
 
 # Joins, leaves and topic changes carry no content worth searching.
 SKIP_SUBTYPES = frozenset(

@@ -1,7 +1,7 @@
 """Pipeline entry point.
 
-cocoindex update slack_index/app.py        # one-shot catch-up
-cocoindex update -L slack_index/app.py     # live: re-scan every poll interval
+cocoindex update cocobee/app.py        # one-shot catch-up
+cocoindex update -L cocobee/app.py     # live: re-scan every poll interval
 """
 
 from __future__ import annotations
@@ -15,13 +15,13 @@ from cocoindex.ops.sentence_transformers import SentenceTransformerEmbedder
 from cocoindex.resources.rate_limit import RateLimiter
 from slack_sdk.web.async_client import AsyncWebClient
 
-from slack_index import config
-from slack_index.context import DISTILLER, EMBEDDER, LANCE_DB, SLACK, SLACK_LIMIT
-from slack_index.distill import Distiller
-from slack_index.files import process_file
-from slack_index.models import SlackChunk
-from slack_index.source import SlackChannelFiles, SlackChannelThreads
-from slack_index.threads import process_thread
+from cocobee import config
+from cocobee.context import DISTILLER, EMBEDDER, LANCE_DB, SLACK, SLACK_LIMIT
+from cocobee.distill import Distiller
+from cocobee.files import process_file
+from cocobee.models import SlackChunk
+from cocobee.source import SlackChannelFiles, SlackChannelThreads
+from cocobee.threads import process_thread
 
 _settings = config.Settings.from_env()
 

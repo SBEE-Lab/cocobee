@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import asyncio
 
-from slack_index.files import extract_text, is_text
-from slack_index.models import FileRef
+from cocobee.files import extract_text, is_text
+from cocobee.models import FileRef
 
 MAX_BYTES = 1024
 

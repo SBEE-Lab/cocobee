@@ -8,8 +8,8 @@ from cocoindex.connectors import lancedb
 from cocoindex.ops.sentence_transformers import SentenceTransformerEmbedder
 from lancedb.table import AsyncTable
 
-from slack_index import config
-from slack_index.rerank import Reranker
+from cocobee import config
+from cocobee.rerank import Reranker
 
 # One source can own many chunks; over-fetch so that collapsing them still
 # leaves top_k distinct sources.
