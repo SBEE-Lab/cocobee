@@ -19,6 +19,8 @@ let
     env = {
       UV_PYTHON = pythonSet.python.interpreter;
       UV_PYTHON_DOWNLOADS = "never";
+      UV_CONCURRENT_DOWNLOADS = "4";
+      UV_HTTP_TIMEOUT = "600";
     };
     shellHook = ''
       unset PYTHONPATH
@@ -38,23 +40,32 @@ let
       }
     );
 
+  driverLibs = lib.optionalString pkgs.stdenv.hostPlatform.isLinux "${pkgs.addDriverRunpath.driverLink}/lib";
+
   uv2nix = mkDevShell {
     packages = [ virtualenv ];
-    env.UV_NO_SYNC = "1";
+    env = {
+      UV_NO_SYNC = "1";
+    }
+    // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+      LD_LIBRARY_PATH = driverLibs;
+    };
   };
 
   impure = mkDevShell {
     packages = [ pythonSet.python ];
     env = lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
-      LD_LIBRARY_PATH = lib.makeLibraryPath [ pkgs.stdenv.cc.cc.lib ];
+      LD_LIBRARY_PATH = lib.makeLibraryPath [ pkgs.stdenv.cc.cc.lib ] + ":" + driverLibs;
     };
     shellHook = ''
-      uv sync
+      if [ ! -x .venv/bin/python ] || [ uv.lock -nt .venv/pyvenv.cfg ]; then
+        uv sync --frozen
+      fi
       . .venv/bin/activate
     '';
   };
 in
 {
   inherit impure uv2nix;
-  default = impure;
+  default = uv2nix;
 }
